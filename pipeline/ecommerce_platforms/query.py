@@ -10,6 +10,7 @@ Usage:
     python -m pipeline.ecommerce_platforms.query --backfill   # run all unqueried months
     python -m pipeline.ecommerce_platforms.query --find-start # binary search for first partition
     python -m pipeline.ecommerce_platforms.query --month 2024-03  # run a specific month
+    python -m pipeline.ecommerce_platforms.query --snapshot-rank 100000  # only top 100K sites in snapshots
 """
 
 import argparse
@@ -31,6 +32,10 @@ _FIRST_PARTITION = "20160101"
 
 # How many months back to store domain-level snapshots
 _SNAPSHOT_MONTHS = 24
+
+# Default rank ceiling for platform_snapshots (CrUX rank; lower = more popular)
+# Override with --snapshot-rank. Use 0 to disable the filter (all domains).
+_DEFAULT_SNAPSHOT_RANK = 1_000_000
 
 PLATFORMS = [
     # Mass market
@@ -88,7 +93,7 @@ def query_month_trends(client, partition_id: str) -> list[tuple]:
     return rows
 
 
-def query_month_snapshots(client, partition_id: str) -> list[tuple]:
+def query_month_snapshots(client, partition_id: str, snapshot_rank: int = _DEFAULT_SNAPSHOT_RANK) -> list[tuple]:
     """
     Individual domain rows for this partition.
     Returns list of (snapshot_month, domain, platform, rank).
@@ -97,6 +102,7 @@ def query_month_snapshots(client, partition_id: str) -> list[tuple]:
     snapshot_month = f"{partition_id[:4]}-{partition_id[4:6]}"
     names_list = ", ".join(f"'{p}'" for p in PLATFORMS)
 
+    rank_filter = f"AND rank <= {snapshot_rank}" if snapshot_rank > 0 else ""
     sql = f"""
         SELECT
           NET.REG_DOMAIN(page) AS domain,
@@ -107,6 +113,7 @@ def query_month_snapshots(client, partition_id: str) -> list[tuple]:
         WHERE date = DATE('{crawl_date}')
           AND tech.technology IN ({names_list})
           AND NET.REG_DOMAIN(page) IS NOT NULL
+          {rank_filter}
         GROUP BY domain, platform
     """
 
@@ -116,7 +123,7 @@ def query_month_snapshots(client, partition_id: str) -> list[tuple]:
     return rows
 
 
-def run(backfill: bool, find_start: bool, month: str | None, force: bool = False) -> None:
+def run(backfill: bool, find_start: bool, month: str | None, force: bool = False, snapshot_rank: int = _DEFAULT_SNAPSHOT_RANK) -> None:
     client = get_client()
 
     print(f"Fetching available partitions (>= {_FIRST_PARTITION})...")
@@ -140,8 +147,9 @@ def run(backfill: bool, find_start: bool, month: str | None, force: bool = False
     trends_done = get_queried_months_trends(conn)
     snapshots_done = get_queried_months_snapshots(conn)
     cutoff = _cutoff_month(_SNAPSHOT_MONTHS)
+    rank_desc = f"rank <= {snapshot_rank:,}" if snapshot_rank > 0 else "all ranks"
     print(f"  trends: {len(trends_done)} months done | snapshots: {len(snapshots_done)} months done")
-    print(f"  snapshot cutoff: {cutoff} (last {_SNAPSHOT_MONTHS} months)")
+    print(f"  snapshot cutoff: {cutoff} (last {_SNAPSHOT_MONTHS} months) | snapshot filter: {rank_desc}")
 
     # --- determine pending partitions ---
     if month:
@@ -179,7 +187,7 @@ def run(backfill: bool, find_start: bool, month: str | None, force: bool = False
 
         if needs_snapshot:
             print(f" | snapshots...", end=" ", flush=True)
-            snap_rows = query_month_snapshots(client, pid)
+            snap_rows = query_month_snapshots(client, pid, snapshot_rank=snapshot_rank)
             upsert_snapshots(conn, snap_rows)
             print(f"{len(snap_rows):,} domains", end="")
 
@@ -195,9 +203,12 @@ def main() -> None:
     parser.add_argument("--find-start", action="store_true", help="Binary search for first partition (no DB writes)")
     parser.add_argument("--month", type=str, default=None, help="Process a single month e.g. 2024-03")
     parser.add_argument("--force", action="store_true", help="Re-run even if month already queried")
+    parser.add_argument("--snapshot-rank", type=int, default=_DEFAULT_SNAPSHOT_RANK,
+                        help=f"Max CrUX rank for domain snapshots (default: {_DEFAULT_SNAPSHOT_RANK:,}; 0 = no filter)")
     args = parser.parse_args()
 
-    run(backfill=args.backfill, find_start=args.find_start, month=args.month, force=args.force)
+    run(backfill=args.backfill, find_start=args.find_start, month=args.month,
+        force=args.force, snapshot_rank=args.snapshot_rank)
 
 
 if __name__ == "__main__":
