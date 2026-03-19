@@ -5,10 +5,10 @@ __pycache__/
 venv/
 .env
 
-# GCP credentials — never commit
-*.json
-!package.json
-!package-lock.json
+# GCP credentials — never commit (allow package/config JSON files)
+*credentials*.json
+*service-account*.json
+*-key.json
 
 # SQLite WAL artifacts
 *.db-shm
