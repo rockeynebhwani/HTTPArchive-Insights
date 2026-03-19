@@ -94,9 +94,9 @@ export default function BubbleRace() {
     setBubbles(
       root.leaves().map(leaf => ({
         platform: leaf.data.name!,
-        cx: leaf.x + 5,
-        cy: leaf.y + 5,
-        r: Math.max(4, leaf.r),
+        cx: (leaf.x ?? 0) + 5,
+        cy: (leaf.y ?? 0) + 5,
+        r: Math.max(4, leaf.r ?? 4),
         count: leaf.data.count!,
       }))
     )
