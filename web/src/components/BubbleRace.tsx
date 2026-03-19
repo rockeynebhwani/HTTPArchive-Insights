@@ -53,7 +53,7 @@ export default function BubbleRace() {
       .then(r => r.json())
       .then((d: TrendsData) => {
         setTrends(d)
-        if (d.months?.length) setMonthIdx(d.months.length - 1)
+        if (d.months?.length) setMonthIdx(0)
       })
   }, [])
 
@@ -126,7 +126,13 @@ export default function BubbleRace() {
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
         <button
-          onClick={() => setIsPlaying(p => !p)}
+          onClick={() => {
+            // If already at the end, rewind to start before playing
+            if (!isPlaying && monthIdx >= (trends?.months.length ?? 1) - 1) {
+              setMonthIdx(0)
+            }
+            setIsPlaying(p => !p)
+          }}
           disabled={!trends}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg text-sm font-medium transition-colors"
         >
