@@ -116,7 +116,7 @@ def query_month_snapshots(client, partition_id: str) -> list[tuple]:
     return rows
 
 
-def run(backfill: bool, find_start: bool, month: str | None) -> None:
+def run(backfill: bool, find_start: bool, month: str | None, force: bool = False) -> None:
     client = get_client()
 
     print(f"Fetching available partitions (>= {_FIRST_PARTITION})...")
@@ -149,9 +149,14 @@ def run(backfill: bool, find_start: bool, month: str | None) -> None:
         if target_pid not in all_partitions:
             print(f"Partition {target_pid} not available.")
             sys.exit(1)
+        snap = f"{target_pid[:4]}-{target_pid[4:6]}"
+        if snap in trends_done and not force:
+            print(f"Month {snap} already queried — skipping. Use --force to re-run.")
+            conn.close()
+            return
         pending = [target_pid]
     elif backfill:
-        pending = [p for p in all_partitions if f"{p[:4]}-{p[4:6]}" not in trends_done]
+        pending = [p for p in all_partitions if f"{p[:4]}-{p[4:6]}" not in trends_done or force]
     else:
         pending = [p for p in all_partitions if f"{p[:4]}-{p[4:6]}" not in trends_done]
         pending = pending[-1:] if pending else []
@@ -189,9 +194,10 @@ def main() -> None:
     parser.add_argument("--backfill", action="store_true", help="Process all unqueried months")
     parser.add_argument("--find-start", action="store_true", help="Binary search for first partition (no DB writes)")
     parser.add_argument("--month", type=str, default=None, help="Process a single month e.g. 2024-03")
+    parser.add_argument("--force", action="store_true", help="Re-run even if month already queried")
     args = parser.parse_args()
 
-    run(backfill=args.backfill, find_start=args.find_start, month=args.month)
+    run(backfill=args.backfill, find_start=args.find_start, month=args.month, force=args.force)
 
 
 if __name__ == "__main__":

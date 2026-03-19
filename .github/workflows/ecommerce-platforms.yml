@@ -15,6 +15,10 @@ on:
         description: "Run a single month e.g. 2024-03 (optional)"
         type: string
         default: ""
+      force:
+        description: "Re-run even if month already queried"
+        type: boolean
+        default: false
   schedule:
     # Run on the 5th of each month at 06:00 UTC (new crawl data is typically published by then)
     - cron: "0 6 5 * *"
@@ -49,6 +53,7 @@ jobs:
           if [ "${{ inputs.backfill }}" = "true" ]; then ARGS="$ARGS --backfill"; fi
           if [ "${{ inputs.find_start }}" = "true" ]; then ARGS="$ARGS --find-start"; fi
           if [ -n "${{ inputs.month }}" ]; then ARGS="$ARGS --month ${{ inputs.month }}"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           python -m pipeline.ecommerce_platforms.query $ARGS
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-key.json
