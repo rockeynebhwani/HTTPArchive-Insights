@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import SankeyDiagram, { SankeyMovement } from './SankeyDiagram'
+import ChordDiagram from './ChordDiagram'
 import MerchantDrawer from './MerchantDrawer'
 import { PLATFORM_COLORS } from '@/lib/colors'
+
+type DiagramView = 'sankey' | 'chord'
 
 interface MovementsData {
   month: string
@@ -27,6 +30,7 @@ export default function MovementsView() {
   const [data, setData] = useState<MovementsData | null>(null)
   const [loading, setLoading] = useState(false)
   const [drawer, setDrawer] = useState<DrawerSelection | null>(null)
+  const [view, setView] = useState<DiagramView>('sankey')
 
   useEffect(() => {
     fetch('/api/movements')
@@ -174,18 +178,43 @@ export default function MovementsView() {
         </div>
       )}
 
-      {/* Sankey */}
+      {/* Flow diagram */}
       <div className="bg-surface border border-border rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <h3 className="text-sm font-semibold text-white">Platform Switches</h3>
             <p className="text-xs text-muted mt-0.5">Click any flow to see which merchants moved</p>
           </div>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
+            <button
+              onClick={() => setView('sankey')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                view === 'sankey'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-muted hover:text-white'
+              }`}
+            >
+              ↔ Sankey
+            </button>
+            <button
+              onClick={() => setView('chord')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                view === 'chord'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-muted hover:text-white'
+              }`}
+            >
+              ◎ Chord
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="flex items-center justify-center h-64 text-muted text-sm">Loading…</div>
-        ) : (
+        ) : view === 'sankey' ? (
           <SankeyDiagram movements={sankeyMovements} onLinkClick={handleLinkClick} />
+        ) : (
+          <ChordDiagram movements={sankeyMovements} onFlowClick={handleLinkClick} />
         )}
       </div>
 
