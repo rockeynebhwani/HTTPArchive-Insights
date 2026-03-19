@@ -55,7 +55,7 @@ jobs:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
 
       - name: Commit DB to data branch
-        if: ${{ inputs.find_start != 'true' }}
+        if: ${{ !inputs.find_start }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
