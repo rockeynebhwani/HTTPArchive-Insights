@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic'
 
 export function GET() {
   let rows = getTrends()
-  if (rows.length === 0) rows = getMockTrends()
+  // Use mock data until we have at least 6 months of real data (enough to animate)
+  const realMonths = new Set(rows.map(r => r.snapshot_month)).size
+  if (realMonths < 6) rows = getMockTrends()
 
   if (rows.length === 0) {
     return NextResponse.json({ months: [], platforms: [], data: {} })
