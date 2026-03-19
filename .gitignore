@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# GCP credentials — never commit
+*.json
+!package.json
+!package-lock.json
+
+# SQLite WAL artifacts
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/

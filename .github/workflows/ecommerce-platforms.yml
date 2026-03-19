@@ -1,0 +1,66 @@
+name: Ecommerce Platforms Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Run all unqueried months (expensive)"
+        type: boolean
+        default: false
+      find_start:
+        description: "Binary search for first partition (no DB writes)"
+        type: boolean
+        default: false
+      month:
+        description: "Run a single month e.g. 2024-03 (optional)"
+        type: string
+        default: ""
+  schedule:
+    # Run on the 5th of each month at 06:00 UTC (new crawl data is typically published by then)
+    - cron: "0 6 5 * *"
+
+jobs:
+  query:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Write GCP credentials
+        run: echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcp-key.json
+
+      - name: Run pipeline
+        run: |
+          ARGS=""
+          if [ "${{ inputs.backfill }}" = "true" ]; then ARGS="$ARGS --backfill"; fi
+          if [ "${{ inputs.find_start }}" = "true" ]; then ARGS="$ARGS --find-start"; fi
+          if [ -n "${{ inputs.month }}" ]; then ARGS="$ARGS --month ${{ inputs.month }}"; fi
+          python -m pipeline.ecommerce_platforms.query $ARGS
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-key.json
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+
+      - name: Commit DB to data branch
+        if: ${{ inputs.find_start != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B data
+          git add data/insights.db
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "data: update insights.db [vercel skip]"
+          git push -f origin data
