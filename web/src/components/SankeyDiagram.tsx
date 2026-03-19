@@ -24,8 +24,12 @@ interface Props {
 type NodeDatum = { name: string }
 type LinkDatum = { count: number }
 
-function nodeColor(name: string): string {
-  return PLATFORM_COLORS[name] ?? '#6b6b8a'
+const srcId = (n: string) => `src:${n}`
+const tgtId = (n: string) => `tgt:${n}`
+const displayName = (id: string) => id.replace(/^(src:|tgt:)/, '')
+
+function nodeColor(id: string): string {
+  return PLATFORM_COLORS[displayName(id)] ?? '#6b6b8a'
 }
 
 export default function SankeyDiagram({ movements, onLinkClick }: Props) {
@@ -45,16 +49,17 @@ export default function SankeyDiagram({ movements, onLinkClick }: Props) {
     // Clear previous render
     while (svg.firstChild) svg.removeChild(svg.firstChild)
 
-    // Build unique node list preserving left (from) and right (to) sides
-    const fromNodes = [...new Set(movements.map(m => m.from))]
-    const toNodes = [...new Set(movements.map(m => m.to))]
-    const allNames = [...new Set([...fromNodes, ...toNodes])]
+    // Use src:/tgt: prefixes so bidirectional flows (A→B and B→A) never
+    // create circular links — d3-sankey treats them as separate nodes.
+    const fromNames = [...new Set(movements.map(m => m.from))]
+    const toNames   = [...new Set(movements.map(m => m.to))]
+    const allIds    = [...new Set([...fromNames.map(srcId), ...toNames.map(tgtId)])]
 
     const graph: SankeyGraph<NodeDatum, LinkDatum> = {
-      nodes: allNames.map(name => ({ name })),
+      nodes: allIds.map(name => ({ name })),
       links: movements.map(m => ({
-        source: m.from,   // use name strings — matches nodeId below
-        target: m.to,
+        source: srcId(m.from),
+        target: tgtId(m.to),
         value: m.count,
         count: m.count,
       })),
@@ -109,12 +114,12 @@ export default function SankeyDiagram({ movements, onLinkClick }: Props) {
       path.addEventListener('mouseenter', () => path.setAttribute('stroke-opacity', '0.7'))
       path.addEventListener('mouseleave', () => path.setAttribute('stroke-opacity', '0.35'))
       path.addEventListener('click', () => {
-        onLinkClick(src.name, tgt.name, (link as any).count)
+        onLinkClick(displayName(src.name), displayName(tgt.name), (link as any).count)
       })
 
       // Tooltip title
       const title = document.createElementNS(ns, 'title')
-      title.textContent = `${src.name} → ${tgt.name}: ${(link as any).count.toLocaleString()} merchants`
+      title.textContent = `${displayName(src.name)} → ${displayName(tgt.name)}: ${(link as any).count.toLocaleString()} merchants`
       path.appendChild(title)
 
       linkGroup.appendChild(path)
@@ -143,7 +148,7 @@ export default function SankeyDiagram({ movements, onLinkClick }: Props) {
       text.setAttribute('fill', '#e2e2e8')
       text.setAttribute('font-size', '11')
       text.setAttribute('font-family', 'Inter, system-ui, sans-serif')
-      text.textContent = `${node.name} (${(node.value ?? 0).toLocaleString()})`
+      text.textContent = `${displayName(node.name)} (${(node.value ?? 0).toLocaleString()})`
       nodeGroup.appendChild(text)
     })
     svg.appendChild(nodeGroup)
