@@ -49,13 +49,12 @@ export default function SankeyDiagram({ movements, onLinkClick }: Props) {
     const fromNodes = [...new Set(movements.map(m => m.from))]
     const toNodes = [...new Set(movements.map(m => m.to))]
     const allNames = [...new Set([...fromNodes, ...toNodes])]
-    const nodeIndex = new Map(allNames.map((n, i) => [n, i]))
 
     const graph: SankeyGraph<NodeDatum, LinkDatum> = {
       nodes: allNames.map(name => ({ name })),
       links: movements.map(m => ({
-        source: nodeIndex.get(m.from)!,
-        target: nodeIndex.get(m.to)!,
+        source: m.from,   // use name strings — matches nodeId below
+        target: m.to,
         value: m.count,
         count: m.count,
       })),
