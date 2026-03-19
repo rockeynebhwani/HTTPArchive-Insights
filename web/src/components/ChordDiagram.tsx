@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { chord as d3chord, ribbon as d3ribbon } from 'd3-chord'
+import { chord as d3chord, ribbon as d3ribbon, ChordGroup } from 'd3-chord'
 import { arc as d3arc } from 'd3-shape'
 import { PLATFORM_COLORS } from '@/lib/colors'
 
@@ -58,10 +58,9 @@ export default function ChordDiagram({ movements, onFlowClick }: Props) {
     const layout = d3chord().padAngle(0.05).sortSubgroups((a, b) => b.value - a.value)
     const chords = layout(matrix)
 
-    const arcGen    = d3arc<{ startAngle: number; endAngle: number }>()
+    const arcGen    = d3arc<ChordGroup>()
       .innerRadius(innerR).outerRadius(outerR)
-    const ribbonGen = d3ribbon<unknown, { startAngle: number; endAngle: number }>()
-      .radius(innerR - 1)
+    const ribbonGen = d3ribbon().radius(innerR - 1)
 
     const ns = 'http://www.w3.org/2000/svg'
     const g  = document.createElementNS(ns, 'g')
