@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 
-const TrendsChart = dynamic(() => import('@/components/TrendsChart'), { ssr: false })
+const TrendsChart   = dynamic(() => import('@/components/TrendsChart'),   { ssr: false })
 const MovementsView = dynamic(() => import('@/components/MovementsView'), { ssr: false })
+const BubbleRace    = dynamic(() => import('@/components/BubbleRace'),    { ssr: false })
 
-type Tab = 'trends' | 'movements'
+type Tab = 'trends' | 'movements' | 'bubble'
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('trends')
@@ -25,8 +26,9 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
           {([
-            ['trends', 'Growth Trends'],
+            ['trends',    'Growth Trends'],
             ['movements', 'Platform Movements'],
+            ['bubble',    'Bubble Race'],
           ] as [Tab, string][]).map(([id, label]) => (
             <button
               key={id}
@@ -66,6 +68,18 @@ export default function Home() {
               </p>
             </div>
             <MovementsView />
+          </div>
+        )}
+
+        {tab === 'bubble' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white">Bubble Race</h2>
+              <p className="text-sm text-muted mt-1">
+                Platform market share animated over time — bubble size = number of detected sites. Hit Play to watch the ecommerce landscape evolve.
+              </p>
+            </div>
+            <BubbleRace />
           </div>
         )}
       </main>

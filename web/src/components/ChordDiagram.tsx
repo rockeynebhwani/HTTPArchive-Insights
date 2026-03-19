@@ -142,12 +142,21 @@ export default function ChordDiagram({ movements, onFlowClick }: Props) {
       path.style.transition = 'opacity 0.15s'
       arcGroup.appendChild(path)
 
-      // Label
+      // Only label arcs wide enough to avoid overlap (min ~7° span)
+      const arcSpan = group.endAngle - group.startAngle
+      if (arcSpan < 0.12) continue
+
       const midAngle = (group.startAngle + group.endAngle) / 2 - Math.PI / 2
-      const labelR   = outerR + 20
+      const labelR   = outerR + 18
       const lx = labelR * Math.cos(midAngle)
       const ly = labelR * Math.sin(midAngle)
-      const rightSide = midAngle > -Math.PI / 2 && midAngle < Math.PI / 2
+      const rightSide = Math.cos(midAngle) >= 0
+
+      const shortLabel = platform
+        .replace('Salesforce ', 'SF ')
+        .replace(' Commerce Cloud', '')
+        .replace(' Commerce', '')
+        .replace(' eCommerce', '')
 
       const text = document.createElementNS(ns, 'text')
       text.setAttribute('x', String(lx))
@@ -155,35 +164,11 @@ export default function ChordDiagram({ movements, onFlowClick }: Props) {
       text.setAttribute('dy', '0.35em')
       text.setAttribute('text-anchor', rightSide ? 'start' : 'end')
       text.setAttribute('fill', color)
-      text.setAttribute('font-size', '12')
+      text.setAttribute('font-size', arcSpan > 0.3 ? '12' : '10')
       text.setAttribute('font-weight', '500')
       text.setAttribute('font-family', 'Inter, system-ui, sans-serif')
-
-      const shortName = platform
-        .replace('Salesforce ', 'SF ')
-        .replace(' Commerce Cloud', '')
-        .replace(' Commerce', '')
-        .replace(' eCommerce', '')
-      text.textContent = shortName
+      text.textContent = arcSpan > 0.25 ? shortLabel : shortLabel.substring(0, 8)
       arcGroup.appendChild(text)
-
-      // Count badge next to label
-      if (group.value > 0) {
-        const badge = document.createElementNS(ns, 'text')
-        const bx = (labelR + 6) * Math.cos(midAngle) + (rightSide ? text.textContent.length * 7 : -(text.textContent.length * 7))
-        const by = (labelR + 6) * Math.sin(midAngle)
-        badge.setAttribute('x', String(bx))
-        badge.setAttribute('y', String(by))
-        badge.setAttribute('dy', '0.35em')
-        badge.setAttribute('text-anchor', rightSide ? 'start' : 'end')
-        badge.setAttribute('fill', '#6b6b8a')
-        badge.setAttribute('font-size', '10')
-        badge.setAttribute('font-family', 'Inter, system-ui, sans-serif')
-        badge.textContent = group.value > 999
-          ? `${(group.value / 1000).toFixed(1)}k`
-          : String(group.value)
-        arcGroup.appendChild(badge)
-      }
     }
     g.appendChild(arcGroup)
     svg.appendChild(g)
