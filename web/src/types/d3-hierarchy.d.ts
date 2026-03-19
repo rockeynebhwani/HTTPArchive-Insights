@@ -6,9 +6,9 @@ declare module 'd3-hierarchy' {
     parent: HierarchyNode<Datum> | null
     children?: HierarchyNode<Datum>[]
     value?: number
-    x?: number
-    y?: number
-    r?: number
+    x: number
+    y: number
+    r: number
     leaves(): HierarchyNode<Datum>[]
     sum(value: (d: Datum) => number): this
     sort(compare: (a: HierarchyNode<Datum>, b: HierarchyNode<Datum>) => number): this
