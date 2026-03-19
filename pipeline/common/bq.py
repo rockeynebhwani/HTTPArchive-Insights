@@ -35,7 +35,7 @@ def probe_partition(
         FROM `httparchive.crawl.pages`,
         UNNEST(technologies) AS tech
         WHERE date = DATE('{crawl_date}')
-          AND tech.name IN ({names_list})
+          AND tech.technology IN ({names_list})
         LIMIT 1
     """
     rows = list(client.query(sql).result())

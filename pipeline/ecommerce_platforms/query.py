@@ -36,12 +36,12 @@ def query_month(client, partition_id: str) -> list[tuple]:
     sql = f"""
         SELECT
           NET.REG_DOMAIN(page) AS domain,
-          tech.name            AS platform,
+          tech.technology      AS platform,
           MIN(rank)            AS rank
         FROM `httparchive.crawl.pages`,
         UNNEST(technologies) AS tech
         WHERE date = DATE('{crawl_date}')
-          AND tech.name IN ({names_list})
+          AND tech.technology IN ({names_list})
         GROUP BY domain, platform
     """
 
