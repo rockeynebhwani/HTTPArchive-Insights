@@ -23,6 +23,10 @@ on:
         description: "Max CrUX rank for domain snapshots (default 1000000; 0 = no filter)"
         type: string
         default: "1000000"
+      snapshot_months:
+        description: "How many months back to store domain-level snapshots (default 24)"
+        type: string
+        default: "24"
   schedule:
     # Run on the 5th of each month at 06:00 UTC (new crawl data is typically published by then)
     - cron: "0 6 5 * *"
@@ -59,6 +63,7 @@ jobs:
           if [ -n "${{ inputs.month }}" ]; then ARGS="$ARGS --month ${{ inputs.month }}"; fi
           if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           if [ -n "${{ inputs.snapshot_rank }}" ]; then ARGS="$ARGS --snapshot-rank ${{ inputs.snapshot_rank }}"; fi
+          if [ -n "${{ inputs.snapshot_months }}" ]; then ARGS="$ARGS --snapshot-months ${{ inputs.snapshot_months }}"; fi
           python -m pipeline.ecommerce_platforms.query $ARGS
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-key.json

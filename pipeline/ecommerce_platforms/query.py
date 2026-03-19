@@ -123,7 +123,7 @@ def query_month_snapshots(client, partition_id: str, snapshot_rank: int = _DEFAU
     return rows
 
 
-def run(backfill: bool, find_start: bool, month: str | None, force: bool = False, snapshot_rank: int = _DEFAULT_SNAPSHOT_RANK) -> None:
+def run(backfill: bool, find_start: bool, month: str | None, force: bool = False, snapshot_rank: int = _DEFAULT_SNAPSHOT_RANK, snapshot_months: int = _SNAPSHOT_MONTHS) -> None:
     client = get_client()
 
     print(f"Fetching available partitions (>= {_FIRST_PARTITION})...")
@@ -146,10 +146,10 @@ def run(backfill: bool, find_start: bool, month: str | None, force: bool = False
     conn = open_db()
     trends_done = get_queried_months_trends(conn)
     snapshots_done = get_queried_months_snapshots(conn)
-    cutoff = _cutoff_month(_SNAPSHOT_MONTHS)
+    cutoff = _cutoff_month(snapshot_months)
     rank_desc = f"rank <= {snapshot_rank:,}" if snapshot_rank > 0 else "all ranks"
     print(f"  trends: {len(trends_done)} months done | snapshots: {len(snapshots_done)} months done")
-    print(f"  snapshot cutoff: {cutoff} (last {_SNAPSHOT_MONTHS} months) | snapshot filter: {rank_desc}")
+    print(f"  snapshot cutoff: {cutoff} (last {snapshot_months} months) | snapshot filter: {rank_desc}")
 
     # --- determine pending partitions ---
     if month:
@@ -184,7 +184,6 @@ def run(backfill: bool, find_start: bool, month: str | None, force: bool = False
         trend_rows = query_month_trends(client, pid)
         upsert_trends(conn, trend_rows)
         print(f"{len(trend_rows)} platforms", end="")
-
         if needs_snapshot:
             print(f" | snapshots...", end=" ", flush=True)
             snap_rows = query_month_snapshots(client, pid, snapshot_rank=snapshot_rank)
@@ -205,10 +204,12 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="Re-run even if month already queried")
     parser.add_argument("--snapshot-rank", type=int, default=_DEFAULT_SNAPSHOT_RANK,
                         help=f"Max CrUX rank for domain snapshots (default: {_DEFAULT_SNAPSHOT_RANK:,}; 0 = no filter)")
+    parser.add_argument("--snapshot-months", type=int, default=_SNAPSHOT_MONTHS,
+                        help=f"How many months back to store domain-level snapshots (default: {_SNAPSHOT_MONTHS})")
     args = parser.parse_args()
 
     run(backfill=args.backfill, find_start=args.find_start, month=args.month,
-        force=args.force, snapshot_rank=args.snapshot_rank)
+        force=args.force, snapshot_rank=args.snapshot_rank, snapshot_months=args.snapshot_months)
 
 
 if __name__ == "__main__":
