@@ -1,10 +1,15 @@
-import Database from 'better-sqlite3'
 import path from 'path'
+
+// Lazy require — keeps better-sqlite3 out of webpack's dependency graph at build time.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BetterSqlite3 = any
 
 const DB_PATH = path.join(process.cwd(), '..', 'data', 'insights.db')
 
-function getDb(): Database.Database | null {
+function getDb(): BetterSqlite3 | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Database = require('better-sqlite3')
     return new Database(DB_PATH, { readonly: true, fileMustExist: true })
   } catch {
     return null

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMerchants, getMerchantsNewOrLost } from '@/lib/db'
+import { getMockMerchants, getMockMerchantsNewOrLost } from '@/lib/mock-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,8 @@ export function GET(request: NextRequest) {
   }
 
   if (type === 'new' || type === 'lost') {
-    const merchants = getMerchantsNewOrLost(month, to, type)
+    let merchants = getMerchantsNewOrLost(month, to, type)
+    if (merchants.length === 0) merchants = getMockMerchantsNewOrLost(to, type)
     return NextResponse.json({ merchants, total: merchants.length })
   }
 
@@ -23,6 +25,7 @@ export function GET(request: NextRequest) {
     return NextResponse.json({ error: 'from is required for switch drill-down' }, { status: 400 })
   }
 
-  const merchants = getMerchants(month, from, to)
+  let merchants = getMerchants(month, from, to)
+  if (merchants.length === 0) merchants = getMockMerchants(from, to)
   return NextResponse.json({ merchants, total: merchants.length })
 }

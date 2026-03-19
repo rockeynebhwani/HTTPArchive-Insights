@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getTrends } from '@/lib/db'
 import { PLATFORM_ORDER } from '@/lib/colors'
+import { getMockTrends } from '@/lib/mock-data'
 
 export const dynamic = 'force-dynamic'
 
 export function GET() {
-  const rows = getTrends()
+  let rows = getTrends()
+  if (rows.length === 0) rows = getMockTrends()
 
   if (rows.length === 0) {
     return NextResponse.json({ months: [], platforms: [], data: {} })
