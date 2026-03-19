@@ -19,7 +19,7 @@ from pipeline.common.db import open_db, get_queried_months, upsert_snapshots
 from pipeline.common.partition_search import find_first_partition
 
 # Update after running --find-start for the 'Ecommerce' category
-_FIRST_PARTITION = "20150101"  # lowered to probe further back
+_FIRST_PARTITION = "20160101"  # confirmed via --find-start 2026-03-19
 
 PLATFORMS = ["Shopify", "WooCommerce", "Magento", "BigCommerce"]
 
